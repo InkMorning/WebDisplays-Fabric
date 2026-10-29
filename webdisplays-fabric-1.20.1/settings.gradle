@@ -1,0 +1,11 @@
+pluginManagement {
+    repositories {
+        maven { name = 'aliyun-gradle'; url = 'https://maven.aliyun.com/repository/gradle-plugin' }
+        maven { name = 'aliyun-public'; url = 'https://maven.aliyun.com/repository/public' }
+        maven { name = 'fabricmc'; url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'webdisplays-fabric'

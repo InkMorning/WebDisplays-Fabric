@@ -1,0 +1,8 @@
+accessWidener	v1	named
+mutable	field	net/minecraft/world/phys/AABB	minX	D
+mutable	field	net/minecraft/world/phys/AABB	minY	D
+mutable	field	net/minecraft/world/phys/AABB	minZ	D
+mutable	field	net/minecraft/world/phys/AABB	maxX	D
+mutable	field	net/minecraft/world/phys/AABB	maxY	D
+mutable	field	net/minecraft/world/phys/AABB	maxZ	D
+accessible	field	net/minecraft/client/MouseHandler	mouseGrabbed	Z

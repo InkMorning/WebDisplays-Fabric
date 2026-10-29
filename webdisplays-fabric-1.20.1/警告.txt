@@ -1,0 +1,86 @@
+WebDisplays (Fabric 1.20.1) —— miniserv 与内置浏览器的安全说明
+================================================================
+
+本文件说明的是 WebDisplays 上游就带有的行为，不是本移植引入的（Forge 上游
+webdisplays-1.20 的相关代码与行号一致）。本工程新增的只有 miniserv_bind
+这个配置项，它的默认值刻意保持 0.0.0.0，即与加入前行为相同。
+
+行号对应本工程 webdisplays-fabric-1.20.1 的源码。
+
+
+一、miniserv 是什么，为什么它会对外监听
+--------------------------------------
+- 世界加载时自动启动：WebDisplaysFabric.java:63-76
+  存储目录 <服务器根目录>/wd_filehost/<玩家UUID>/（WebDisplaysFabric.java:72）
+- 监听地址：miniserv/server/Server.java:56
+  默认 miniserv_bind=0.0.0.0，即服务器主机上**所有网卡**都开放该端口，包括公网接口。
+  端口来自 miniserv_port，默认 25566（config/CommonConfig.java:98；设为 0 可完全禁用）
+- 客户端侧反向连接：client/ClientProxy.java:475-482
+  客户端用「Minecraft 服务器的 IP + 服务端下发的 miniserv 端口」建立 TCP 连接。
+
+二、认证确实做了，不是裸奔
+--------------------------
+- 玩家登录 MC 后，客户端生成一次性 RSA-2048 密钥对，只把公钥经 MC 通道提交
+  （C2SMessageMiniservConnect），服务端为其生成 32 字节会话密钥并加密回传
+  （ClientManager.encryptClientKey）。
+- miniserv 连接时先做 HMAC-SHA256 挑战应答；UUID 若不在服务端已签发密钥表中，
+  直接断开（ServerClient.java:70-96）。断开 MC 连接时密钥被撤销
+  （WebDisplaysFabric.java:57-58）。
+- 文件名过滤禁掉了 '/'、'\\'、前导 '.' 与超长名（utilities/Util.java:160-162），
+  路径穿越不可行。
+结论：外部扫描者无法直接读写他人文件。风险集中在下面几条。
+
+三、残余风险清单
+----------------
+1) 玩家名单枚举：未认证连接者可通过「Unknown client with UUID ...」与接受响应的
+   差异，判断某个玩家 UUID 当前是否在本服登录过（ServerClient.java:70-96）。
+2) 无连接数与带宽上限：暴露端口可被用于占用与扫描。
+3) 上传目录是共享网盘：任何已通过认证的玩家都能列出并下载他人目录中的全部文件
+   （ServerClient.java:216 GET_FILE、:259 LIST，均以任意目标 UUID 为参数，无归属
+   校验）。**按既定决定，此行为保持不变。**
+4) 无保留期：上传文件永久留在 wd_filehost/，除玩家自行删除外不会清理，玩家退服后
+   数据仍在服务器上。
+5) 屏幕/掌机 URL 无方案与网段校验，并且会广播给附近所有客户端
+   （entity/TileEntityScreen.java:407 与 :438）：拥有 CHANGE_URL 权限的玩家或服主
+   可以让**其他玩家本机**的浏览器去加载 file:///、127.0.0.1、内网地址或元数据地址，
+   并把结果渲染在屏幕上。唯一的缓解是 browser.blacklist，它默认为空数组
+   （config/CommonConfig.java:41）且只做主机名精确匹配（WebDisplays.java:111-115），
+   因此拦不住 file://（无主机名）、IP 字面量、重定向与 DNS 重绑定。
+   **按既定决定，此行为保持不变。**
+6) 无 URL 时默认打开 https://www.google.com（entity/TileEntityScreen.java:228），
+   YouTube 类屏幕同样以玩家真实 IP 直连外部站点；浏览记录与 Cookie 由 MCEF 持久化
+   在游戏目录，本模组不做清理。
+
+四、安全方案（按推荐顺序）
+--------------------------
+1) 只自己玩或只做局域网测试：
+   config/webdisplays_common.json 中 mini_server.miniserv_port = 0
+   —— 服务器方块与文件屏幕功能不可用，但对外监听面彻底归零。
+   注意：本版本的「上传文件在屏幕中显示」功能因 WDScheme.readResponse 未实现而
+   本来就不工作，所以关掉 miniserv 在今天不会损失任何可用功能。
+
+2) 服务端与客户端在同一台机器（或不需要远程玩家上传）：
+   mini_server.miniserv_bind = "127.0.0.1"
+   —— 这会**阻断远程玩家**的上传与文件屏幕，是功能与暴露面的直接取舍。
+
+3) 必须让远程玩家上传时（当前默认）：
+   - 保持 miniserv_bind = "0.0.0.0"，但用防火墙/VPS 安全组把 25566 限制到已知玩家
+     网段，不要与 MC 端口一起无条件开放；
+   - 把 miniserv_port 改成非常用端口可降低扫描噪音（不等于安全边界）；
+   - 启动日志会打印「Miniserv listening on <addr>:<port>」，便于核对绑定是否生效。
+
+4) 运维习惯：
+   - 定期清理 wd_filehost/，尤其是玩家已离服后遗留的目录；
+   - 屏幕配置器里收紧 CHANGE_URL / INTERACT / 好友权限；
+   - 在 browser.blacklist 填入你明确不想加载的域名，但要清楚它挡不住 IP 与 file://。
+
+五、本版本另有一处已知功能缺陷（与安全无关，但影响默认首页）
+------------------------------------------------------------
+MCEF 2.1.6-1.20.1 的 mod:// 处理器（com.cinemamod.mcef.ModScheme）拼出的资源路径
+以 '/' 开头（字节码里的拼接式是 "/assets/<域>/html/<文件>"），却交给
+ClassLoader.getResourceAsStream 读取——该方法不接受前导斜杠，因此默认首页
+mod://webdisplays/main.html 在 Fabric 上永远取不到，屏幕只会白屏。已确认
+1.20.1 与 1.21.1 的 MCEF 是同一份实现，所以两个版本都中招。
+
+1.21.1 的移植里已经用「自带 webdisplays:// scheme + 加载时重写遗留 mod:// URL」
+的方式解决，该方案同样适用于本工程；本文件所在工程**尚未**引入该修复。
