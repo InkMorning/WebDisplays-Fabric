@@ -1,0 +1,62 @@
+/*
+ * Copyright (C) 2018 BARBOTIN Nicolas
+ */
+
+package net.montoyo.wd.item;
+
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.montoyo.wd.WebDisplays;
+import net.montoyo.wd.core.DefaultUpgrade;
+import net.montoyo.wd.core.IUpgrade;
+import net.montoyo.wd.entity.TileEntityScreen;
+import net.montoyo.wd.utilities.BlockSide;
+import org.jetbrains.annotations.NotNull;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+public class ItemUpgrade extends ItemMulti implements IUpgrade, WDItem {
+    public final DefaultUpgrade type;
+    
+    public ItemUpgrade(DefaultUpgrade type) {
+        super(DefaultUpgrade.class, new Properties()/*.tab(WebDisplays.CREATIVE_TAB)*/);
+        this.type = type;
+    }
+
+    @Override
+    public void onInstall(@NotNull TileEntityScreen tes, @NotNull BlockSide screenSide, @Nullable Player player, @NotNull ItemStack is) {
+    }
+
+    @Override
+    public boolean onRemove(@NotNull TileEntityScreen tes, @NotNull BlockSide screenSide, @Nullable Player player, @NotNull ItemStack is) {
+        if(DefaultUpgrade.LASERMOUSE.matchesLaserMouse(is))
+            tes.clearLaserUser(screenSide);
+
+        return false;
+    }
+
+    @Override
+    public boolean isSameUpgrade(@NotNull ItemStack myStack, @NotNull ItemStack otherStack) {
+        if (myStack.getItem() instanceof ItemUpgrade upgrade0) {
+            if (otherStack.getItem() instanceof ItemUpgrade upgrade1) {
+                return upgrade0.type == upgrade1.type;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public String getJSName(@NotNull ItemStack is) {
+        Item item = is.getItem();
+        if (item instanceof ItemUpgrade upgrade)
+            return "webdisplays:" + upgrade.type.toString();
+        return "webdisplays:null";
+    }
+
+    @Override
+    public String getWikiName(@NotNull ItemStack is) {
+        return is.getItem().getName(is).getString();
+    }
+}

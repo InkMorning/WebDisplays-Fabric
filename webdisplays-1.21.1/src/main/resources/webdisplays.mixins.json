@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.montoyo.wd.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ItemEntityTickMixin",
+    "PlayerDropMixin"
+  ],
+  "client": [
+    "ItemInHandRendererMixin",
+    "ModelBlockRendererMixin",
+    "MouseHandlerMixin",
+    "OverlayMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

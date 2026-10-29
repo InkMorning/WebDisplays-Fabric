@@ -1,0 +1,22 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "particle": "webdisplays:block/screen15",
+    "s0": "webdisplays:block/screen0",
+    "s1": "webdisplays:block/screen1",
+    "s2": "webdisplays:block/screen2",
+    "s3": "webdisplays:block/screen3",
+    "s4": "webdisplays:block/screen4",
+    "s5": "webdisplays:block/screen5",
+    "s6": "webdisplays:block/screen6",
+    "s7": "webdisplays:block/screen7",
+    "s8": "webdisplays:block/screen8",
+    "s9": "webdisplays:block/screen9",
+    "s10": "webdisplays:block/screen10",
+    "s11": "webdisplays:block/screen11",
+    "s12": "webdisplays:block/screen12",
+    "s13": "webdisplays:block/screen13",
+    "s14": "webdisplays:block/screen14",
+    "s15": "webdisplays:block/screen15"
+  }
+}
